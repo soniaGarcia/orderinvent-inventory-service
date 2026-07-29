@@ -25,7 +25,7 @@ WORKDIR /app
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # 5. Copiar únicamente el JAR generado desde la etapa de compilación
-COPY --from=builder /app/target/orderinvent-order-service-1.0.0.jar app.jar
+COPY --from=builder /app/target/orderinvent-inventory-service-1.0.0.jar app.jar
 
 # 6. Permisos sobre el directorio de trabajo
 RUN chown -R appuser:appgroup /app
