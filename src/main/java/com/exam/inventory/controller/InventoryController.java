@@ -21,8 +21,8 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @PostMapping("/deduct")
-    @Operation(summary = "Descontar stock de un producto", description = "Invocado por Order Service para confirmar disponibilidad y reducir existencias de forma transaccional")
-    @ApiResponse(responseCode = "200", description = "Retorna true si el stock fue descontado, false si es insuficiente o no existe")
+    @Operation(summary = "Descontar stock en lote (Batch)", description = "Invocado por Order Service para confirmar disponibilidad y reducir existencias de múltiples productos de forma transaccional")
+    @ApiResponse(responseCode = "200", description = "Retorna true si el stock de todos los productos fue descontado, false si alguno es insuficiente o no existe")
     public ResponseEntity<Boolean> deductStock(@Valid @RequestBody DeductStockRequest request) {
         boolean result = inventoryService.deductStock(request);
         return ResponseEntity.ok(result);

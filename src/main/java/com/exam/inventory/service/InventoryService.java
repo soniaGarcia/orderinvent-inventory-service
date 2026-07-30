@@ -1,5 +1,6 @@
 package com.exam.inventory.service;
 
+import com.exam.inventory.dto.DeductStockItemRequest;
 import com.exam.inventory.dto.DeductStockRequest;
 import com.exam.inventory.dto.InventoryResponse;
 import com.exam.inventory.dto.UpdateStockRequest;
@@ -11,6 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -20,26 +24,42 @@ public class InventoryService {
 
     @Transactional
     public boolean deductStock(DeductStockRequest request) {
-        log.info("Procesando descuento de stock para el producto: {} (Cantidad: {})", 
-                request.getProductId(), request.getQuantity());
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            log.warn("Solicitud de descuento de stock vacía.");
+            return false;
+        }
 
-        return inventoryRepository.findByProductId(request.getProductId())
-                .map(inventory -> {
-                    if (inventory.getAvailableStock() >= request.getQuantity()) {
-                        inventory.setAvailableStock(inventory.getAvailableStock() - request.getQuantity());
-                        inventoryRepository.save(inventory);
-                        log.info("Stock descontado exitosamente. Producto: {}, Stock restante: {}", 
-                                request.getProductId(), inventory.getAvailableStock());
-                        return true;
-                    }
-                    log.warn("Stock insuficiente para el producto: {}. Disponible: {}, Solicitado: {}", 
-                            request.getProductId(), inventory.getAvailableStock(), request.getQuantity());
-                    return false;
-                })
-                .orElseGet(() -> {
-                    log.error("No se encontró el producto en el inventario: {}", request.getProductId());
-                    return false;
-                });
+        List<ProductInventory> inventoriesToUpdate = new ArrayList<>();
+
+        // FASE 1: Validación Atómica (Verificar que TODOS los productos existan y tengan stock suficiente)
+        for (DeductStockItemRequest itemReq : request.getItems()) {
+            log.info("Verificando stock para el producto: {} (Cantidad solicitada: {})", 
+                    itemReq.getProductCode(), itemReq.getQuantity());
+
+            ProductInventory inventory = inventoryRepository.findByProductId(itemReq.getProductCode())
+                    .orElse(null);
+
+            if (inventory == null) {
+                log.error("Producto no encontrado en inventario: {}", itemReq.getProductCode());
+                return false; // Cancela la transacción completa
+            }
+
+            if (inventory.getAvailableStock() < itemReq.getQuantity()) {
+                log.warn("Stock insuficiente para el producto: {}. Disponible: {}, Solicitado: {}", 
+                        itemReq.getProductCode(), inventory.getAvailableStock(), itemReq.getQuantity());
+                return false; // Cancela la transacción completa
+            }
+
+            // Preparar el ítem descontado en memoria
+            inventory.setAvailableStock(inventory.getAvailableStock() - itemReq.getQuantity());
+            inventoriesToUpdate.add(inventory);
+        }
+
+        // FASE 2: Persistencia en Lote (Solo se ejecuta si todos los productos pasaron la validación)
+        inventoryRepository.saveAll(inventoriesToUpdate);
+        log.info("Stock descontado exitosamente para {} productos.", inventoriesToUpdate.size());
+        
+        return true;
     }
 
     @Transactional
