@@ -1,8 +1,1 @@
-/DeductStockItemRequest$DeductStockItemRequestBuilder.class
-/DeductStockItemRequest.class
-/DeductStockRequest$DeductStockRequestBuilder.class
-/DeductStockRequest.class
-/InventoryResponse$InventoryResponseBuilder.class
-/InventoryResponse.class
-/UpdateStockRequest$UpdateStockRequestBuilder.class
-/UpdateStockRequest.class
+*.class
