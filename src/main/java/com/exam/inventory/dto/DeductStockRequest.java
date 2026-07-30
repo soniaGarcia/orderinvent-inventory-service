@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class DeductStockRequest {
 
-    @NotEmpty(message = "La lista de productos a descontar no puede estar vacía")
+    @NotEmpty(message = "La lista de productos no puede estar vacía")
     @Valid
     private List<DeductStockItemRequest> items;
 }

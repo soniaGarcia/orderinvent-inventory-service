@@ -15,33 +15,33 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/inventory")
 @RequiredArgsConstructor
-@Tag(name = "Inventory Controller", description = "API para la verificación y gestión de stock de productos")
+@Tag(name = "Inventory Controller", description = "API para la verificación y gestión de stock por código de negocio")
 public class InventoryController {
 
     private final InventoryService inventoryService;
 
     @PostMapping("/deduct")
-    @Operation(summary = "Descontar stock en lote (Batch)", description = "Invocado por Order Service para confirmar disponibilidad y reducir existencias de múltiples productos de forma transaccional")
-    @ApiResponse(responseCode = "200", description = "Retorna true si el stock de todos los productos fue descontado, false si alguno es insuficiente o no existe")
+    @Operation(summary = "Descontar stock en lote (Batch)", description = "Verifica y descuenta el stock de una lista de productos identificados por productCode de forma atómica")
+    @ApiResponse(responseCode = "200", description = "Retorna true si el stock fue descontado, false si no hay suficiente o el producto no existe")
     public ResponseEntity<Boolean> deductStock(@Valid @RequestBody DeductStockRequest request) {
         boolean result = inventoryService.deductStock(request);
         return ResponseEntity.ok(result);
     }
 
     @PostMapping
-    @Operation(summary = "Cargar o incrementar stock de un producto")
-    @ApiResponse(responseCode = "200", description = "Inventario actualizado exitosamente")
+    @Operation(summary = "Cargar o incrementar stock de un producto usando productCode")
+    @ApiResponse(responseCode = "200", description = "Inventario creado o actualizado exitosamente")
     public ResponseEntity<InventoryResponse> addOrUpdateStock(@Valid @RequestBody UpdateStockRequest request) {
         InventoryResponse response = inventoryService.addOrUpdateStock(request);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{productId}")
-    @Operation(summary = "Consultar stock disponible de un producto")
+    @GetMapping("/{productCode}")
+    @Operation(summary = "Consultar stock disponible por código de negocio (productCode)")
     @ApiResponse(responseCode = "200", description = "Consulta realizada exitosamente")
     @ApiResponse(responseCode = "404", description = "Producto no encontrado")
-    public ResponseEntity<InventoryResponse> getStockByProductId(@PathVariable String productId) {
-        InventoryResponse response = inventoryService.getStockByProductId(productId);
+    public ResponseEntity<InventoryResponse> getStockByProductCode(@PathVariable String productCode) {
+        InventoryResponse response = inventoryService.getStockByProductCode(productCode);
         return ResponseEntity.ok(response);
     }
 }

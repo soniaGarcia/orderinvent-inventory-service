@@ -1,9 +1,6 @@
 package com.exam.inventory.service;
 
-import com.exam.inventory.dto.DeductStockItemRequest;
-import com.exam.inventory.dto.DeductStockRequest;
-import com.exam.inventory.dto.InventoryResponse;
-import com.exam.inventory.dto.UpdateStockRequest;
+import com.exam.inventory.dto.*;
 import com.exam.inventory.exception.ResourceNotFoundException;
 import com.exam.inventory.model.ProductInventory;
 import com.exam.inventory.repository.InventoryRepository;
@@ -31,31 +28,30 @@ public class InventoryService {
 
         List<ProductInventory> inventoriesToUpdate = new ArrayList<>();
 
-        // FASE 1: Validación Atómica (Verificar que TODOS los productos existan y tengan stock suficiente)
+        // FASE 1: Validación Atómica por productCode
         for (DeductStockItemRequest itemReq : request.getItems()) {
-            log.info("Verificando stock para el producto: {} (Cantidad solicitada: {})", 
+            log.info("Verificando stock para el código de producto: {} (Cantidad: {})", 
                     itemReq.getProductCode(), itemReq.getQuantity());
 
-            ProductInventory inventory = inventoryRepository.findByProductId(itemReq.getProductCode())
+            ProductInventory inventory = inventoryRepository.findByProductCode(itemReq.getProductCode())
                     .orElse(null);
 
             if (inventory == null) {
-                log.error("Producto no encontrado en inventario: {}", itemReq.getProductCode());
-                return false; // Cancela la transacción completa
+                log.error("Producto no encontrado en inventario con código: {}", itemReq.getProductCode());
+                return false; // Rollback
             }
 
             if (inventory.getAvailableStock() < itemReq.getQuantity()) {
-                log.warn("Stock insuficiente para el producto: {}. Disponible: {}, Solicitado: {}", 
+                log.warn("Stock insuficiente para el producto {}. Disponible: {}, Solicitado: {}", 
                         itemReq.getProductCode(), inventory.getAvailableStock(), itemReq.getQuantity());
-                return false; // Cancela la transacción completa
+                return false; // Rollback
             }
 
-            // Preparar el ítem descontado en memoria
             inventory.setAvailableStock(inventory.getAvailableStock() - itemReq.getQuantity());
             inventoriesToUpdate.add(inventory);
         }
 
-        // FASE 2: Persistencia en Lote (Solo se ejecuta si todos los productos pasaron la validación)
+        // FASE 2: Persistencia Batch
         inventoryRepository.saveAll(inventoriesToUpdate);
         log.info("Stock descontado exitosamente para {} productos.", inventoriesToUpdate.size());
         
@@ -64,15 +60,16 @@ public class InventoryService {
 
     @Transactional
     public InventoryResponse addOrUpdateStock(UpdateStockRequest request) {
-        log.info("Actualizando inventario para el producto: {} con stock: {}", request.getProductId(), request.getStock());
+        log.info("Actualizando inventario para el código de producto: {} con stock: {}", 
+                request.getProductCode(), request.getStock());
 
-        ProductInventory inventory = inventoryRepository.findByProductId(request.getProductId())
+        ProductInventory inventory = inventoryRepository.findByProductCode(request.getProductCode())
                 .map(existing -> {
                     existing.setAvailableStock(existing.getAvailableStock() + request.getStock());
                     return existing;
                 })
                 .orElseGet(() -> ProductInventory.builder()
-                        .productId(request.getProductId())
+                        .productCode(request.getProductCode())
                         .availableStock(request.getStock())
                         .build());
 
@@ -81,15 +78,15 @@ public class InventoryService {
     }
 
     @Transactional(readOnly = true)
-    public InventoryResponse getStockByProductId(String productId) {
-        ProductInventory inventory = inventoryRepository.findByProductId(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado en inventario: " + productId));
+    public InventoryResponse getStockByProductCode(String productCode) {
+        ProductInventory inventory = inventoryRepository.findByProductCode(productCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con código: " + productCode));
         return mapToResponse(inventory);
     }
 
     private InventoryResponse mapToResponse(ProductInventory inventory) {
         return InventoryResponse.builder()
-                .productId(inventory.getProductId())
+                .productCode(inventory.getProductCode())
                 .availableStock(inventory.getAvailableStock())
                 .updatedAt(inventory.getUpdatedAt())
                 .build();

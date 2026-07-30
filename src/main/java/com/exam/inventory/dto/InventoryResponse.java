@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class InventoryResponse {
 
-    private String productId;
+    private String productCode;
     private Integer availableStock;
     private LocalDateTime updatedAt;
 }

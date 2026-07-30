@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DeductStockItemRequest {
 
-    @NotBlank(message = "El código o ID del producto es obligatorio")
-    private String productCode; // Código de negocio (ej: "PROD-A100")
+    @NotBlank(message = "El código de producto (productCode) es obligatorio")
+    private String productCode;
 
     @NotNull(message = "La cantidad es obligatoria")
     @Min(value = 1, message = "La cantidad a descontar debe ser mayor a 0")
