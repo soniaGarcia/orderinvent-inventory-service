@@ -26,33 +26,36 @@ public class PendingOrderListener {
     @KafkaListener(topics = "order-events", groupId = "inventory-saga-group")
     public void consumeOrderEvents(String rawPayload) {
         try {
+            log.info("Saga Listener: Evento recibido en order-events -> {}", rawPayload);
+            
             JsonNode root = objectMapper.readTree(rawPayload);
             String status = root.path("status").asText();
             String orderId = root.path("orderId").asText();
 
-            // Únicamente procesamos eventos que hayan quedado en estado PENDIENTE por fallo previo
+            // Filtrar únicamente los eventos PENDIENTE
             if (!"PENDIENTE".equalsIgnoreCase(status)) {
                 return;
             }
 
             log.info("Saga Coreografiada: Se detectó orden PENDIENTE #{} tras recuperación de inventario.", orderId);
 
-            // Reconstruir la solicitud de descuento desde el mensaje
-            JsonNode itemsNode = root.path("items"); // Asegúrate de incluir los items en el evento inicial
+            JsonNode itemsNode = root.path("items");
             List<DeductStockItemRequest> items = new ArrayList<>();
             
-            if (itemsNode.isArray()) {
+            if (itemsNode.isArray() && !itemsNode.isEmpty()) {
                 for (JsonNode item : itemsNode) {
                     items.add(new DeductStockItemRequest(
                         item.path("productCode").asText(),
                         item.path("quantity").asInt()
                     ));
                 }
+            } else {
+                log.error("Saga Fallida: La orden #{} no incluyó la lista de 'items' en el evento Kafka.", orderId);
             }
 
             boolean success = inventoryService.deductStock(new DeductStockRequest(items));
 
-            // Publicar el resultado del procesamiento de inventario a un nuevo tópico
+            // Publicar respuesta hacia 'inventory-events'
             String resultStatus = success ? "INVENTORY_SUCCESS" : "INVENTORY_FAILED";
             String responseEvent = String.format("{\"orderId\":\"%s\", \"status\":\"%s\"}", orderId, resultStatus);
             

@@ -21,10 +21,10 @@ spring:
     compatibility-verifier:
       enabled: false
   kafka:
-    bootstrap-servers: localhost:9092 # o kafka:9092 según tu docker-compose
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092} # Adaptable a Docker (kafka:9092)
     consumer:
       group-id: inventory-saga-group
-      auto-offset-reset: earliest # OBLIGATORIO: Lee eventos emitidos mientras el servicio estuvo DOWN
+      auto-offset-reset: earliest # Procesa eventos pendientes acumulados mientras estuvo offline
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
