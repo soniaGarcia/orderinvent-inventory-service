@@ -10,16 +10,17 @@ Microservicio responsable del control de stock de productos por SKU (`productCod
 
 ## ⚙️ Puerto y Endpoints
 * **Puerto Local:** `8081`
+* **Consola H2 (Dev):** `http://localhost:8081/h2-console` (JDBC URL: `jdbc:h2:mem:inventory_db`)
 * **Endpoints HTTP:**
-  * `POST /api/v1/inventory/deduct` - Deducción atómica de stock en lote (REST Síncrono).
-  * `GET /actuator/health/readiness` - Health Check ALB.
+  * `POST /api/v1/inventory/` - Cargar o incrementar stock.
+  * `GET /api/v1/inventory/{productCode}` - Consultar stock.
+  * `POST /api/v1/inventory/deduct` - Descontar el stock.
+  * `GET /actuator/health/readiness` - Health Check.
 
-## 🔄 Integración de Eventos (Kafka)
-* **Consumidor:** `order-events` (Escucha ordenes en estado `PENDING` para reconciliación asíncrona).
-* **Productor:** `inventory-events` (Publica `INVENTORY_SUCCESS` o `INVENTORY_FAILED`).
-
-## 🛠️ Variables de Entorno Clave
+## 🛠️ Variables de Entorno Clave (Perfil `local`)
 ```env
 SERVER_PORT=8081
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/inventory_db
+SPRING_PROFILES_ACTIVE=local
+SPRING_DATASOURCE_URL=jdbc:h2:mem:inventory_db
+SPRING_H2_CONSOLE_ENABLED=true
 SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
