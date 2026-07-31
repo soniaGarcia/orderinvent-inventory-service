@@ -3,8 +3,8 @@
 Microservicio responsable del control de stock de productos por SKU (`productCode`). Procesa deducciones de inventario de forma atómica bajo el principio *All-or-Nothing* para evitar descuentos parciales.
 
 ## 🚀 Tecnologías
-* **Runtime:** Java 21 / Spring Boot 3.x
-* **Base de Datos:** PostgreSQL (Aurora Serverless v2)
+* **Runtime:** Java 17 / Spring Boot 3.x
+* **Base de Datos:** H2
 * **Mensajería:** Apache Kafka
 * **Transaccionalidad:** Spring `@Transactional` con aislamiento en lotes
 
